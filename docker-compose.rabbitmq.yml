@@ -1,0 +1,61 @@
+# =====================================================================================
+#  RabbitMQ: clúster de 2 nodos (mensajería de TAREAS: notificar, documentos, auditoría)
+#
+#  Solo RabbitMQ:   docker compose -f docker-compose.rabbitmq.yml up -d
+#  Ver el clúster:  docker compose exec rabbitmq1 rabbitmq-diagnostics cluster_status
+#  Consolas:        http://localhost:15672 (nodo 1) · http://localhost:15673 (nodo 2)
+# =====================================================================================
+name: pedidos360
+
+x-rabbitmq: &rabbitmq
+  image: rabbitmq:4.1-management
+  environment:
+    RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-pedidos}
+    RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-pedidos123}
+    COOKIE_CLUSTER: ${RABBITMQ_ERLANG_COOKIE:-pedidos360-cookie-cambiar}
+  # 1) Ambos nodos deben compartir la misma Erlang cookie para formar el clúster.
+  # 2) La configuración del clúster se copia con permisos 644: RabbitMQ ignora archivos
+  #    montados con permisos 777 (caso típico al montar desde Windows).
+  entrypoint:
+    - sh
+    - -c
+    - >
+      printf %s "$$COOKIE_CLUSTER" > /var/lib/rabbitmq/.erlang.cookie &&
+      chmod 600 /var/lib/rabbitmq/.erlang.cookie &&
+      chown rabbitmq:rabbitmq /var/lib/rabbitmq/.erlang.cookie &&
+      cp /config/cluster.conf /etc/rabbitmq/conf.d/20-cluster.conf &&
+      chmod 644 /etc/rabbitmq/conf.d/20-cluster.conf &&
+      exec docker-entrypoint.sh rabbitmq-server
+  healthcheck:
+    test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+    interval: 10s
+    timeout: 10s
+    retries: 12
+    start_period: 30s
+  restart: unless-stopped
+
+services:
+  rabbitmq1:
+    <<: *rabbitmq
+    hostname: rabbitmq1
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./infra/rabbitmq/cluster.conf:/config/cluster.conf:ro
+      - rabbitmq1-data:/var/lib/rabbitmq
+
+  rabbitmq2:
+    <<: *rabbitmq
+    hostname: rabbitmq2
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    volumes:
+      - ./infra/rabbitmq/cluster.conf:/config/cluster.conf:ro
+      - rabbitmq2-data:/var/lib/rabbitmq
+    # Sin depends_on: los dos nodos deben arrancar en paralelo para descubrirse y formar el clúster.
+
+volumes:
+  rabbitmq1-data:
+  rabbitmq2-data:

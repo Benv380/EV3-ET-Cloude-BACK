@@ -1,0 +1,1152 @@
+# GENERADO por generar_openapi_aws.py desde pedidos360-openapi.yaml. No editar a mano.
+openapi: 3.0.1
+info:
+  title: pedidos360-api
+  version: 2.0.0
+  description: Pedidos 360 en AWS API Gateway (HTTP API). Generado desde pedidos360-openapi.yaml.
+x-amazon-apigateway-cors:
+  allowOrigins:
+  - ORIGEN_FRONTEND
+  - http://localhost:4200
+  allowMethods:
+  - GET
+  - POST
+  - PATCH
+  - DELETE
+  - OPTIONS
+  allowHeaders:
+  - authorization
+  - content-type
+  exposeHeaders:
+  - location
+  maxAge: 600
+paths:
+  /api/pedidos:
+    get:
+      operationId: listarPedidos
+      summary: Listar pedidos
+      tags:
+      - Pedidos
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/pedidos
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+    post:
+      operationId: crearPedido
+      summary: Crear pedido (publica PEDIDO_CREADO en el exchange FANOUT)
+      tags:
+      - Pedidos
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://IP_BACKEND:8080/api/pedidos
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/pedidos/{id}:
+    get:
+      operationId: obtenerPedido
+      summary: Obtener pedido
+      tags:
+      - Pedidos
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/pedidos/{id}
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+  /api/pedidos/{id}/estado:
+    patch:
+      operationId: cambiarEstadoPedido
+      summary: Cambiar estado (publica ESTADO_CAMBIADO en el exchange TOPIC)
+      tags:
+      - Pedidos
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: PATCH
+        uri: http://IP_BACKEND:8080/api/pedidos/{id}/estado
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+  /api/pedidos/{id}/boleta:
+    post:
+      operationId: solicitarBoleta
+      summary: Solicitar boleta (publica BOLETA_SOLICITADA en el exchange DIRECT)
+      tags:
+      - Pedidos
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://IP_BACKEND:8080/api/pedidos/{id}/boleta
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+  /api/documentos:
+    get:
+      operationId: listarDocumentos
+      summary: Listar tickets y boletas
+      tags:
+      - Documentos
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/documentos
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: pedidoId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+  /api/documentos/{id}/contenido:
+    get:
+      operationId: contenidoDocumento
+      summary: Contenido del documento (texto)
+      tags:
+      - Documentos
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/documentos/{id}/contenido
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+  /api/notificaciones:
+    get:
+      operationId: listarNotificaciones
+      summary: Notificaciones enviadas
+      tags:
+      - Actividad
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/notificaciones
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/auditoria:
+    get:
+      operationId: listarAuditoria
+      summary: Eventos auditados (con exchange y routing key)
+      tags:
+      - Actividad
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/auditoria
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/notificaciones/consumidores:
+    get:
+      operationId: listarConsumidoresNotificaciones
+      summary: Consumidores de notificaciones-service (notificaciones y auditoría)
+      tags:
+      - Mensajería
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/notificaciones/consumidores
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/notificaciones/consumidores/{id}/{accion}:
+    post:
+      operationId: cambiarConsumidorNotificaciones
+      summary: Pausar o reanudar un consumidor de notificaciones-service
+      tags:
+      - Mensajería
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://IP_BACKEND:8080/api/notificaciones/consumidores/{id}/{accion}
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+          - notificaciones
+          - auditoria
+          - documentos
+      - name: accion
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+          - pausar
+          - reanudar
+  /api/documentos/consumidores:
+    get:
+      operationId: listarConsumidoresDocumentos
+      summary: Consumidores de documentos-service
+      tags:
+      - Mensajería
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/documentos/consumidores
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/documentos/consumidores/{id}/{accion}:
+    post:
+      operationId: cambiarConsumidorDocumentos
+      summary: Pausar o reanudar un consumidor de documentos-service
+      tags:
+      - Mensajería
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://IP_BACKEND:8080/api/documentos/consumidores/{id}/{accion}
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+          - notificaciones
+          - auditoria
+          - documentos
+      - name: accion
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+          - pausar
+          - reanudar
+  /api/admin/rabbit/salud:
+    get:
+      operationId: saludMensajeria
+      summary: Totales, tasas y alertas con su impacto en rendimiento y estabilidad
+      tags:
+      - Mensajería
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/salud
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/admin/rabbit/policies:
+    get:
+      operationId: listarPoliticas
+      summary: Políticas de retención
+      tags:
+      - Mensajería
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/policies
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/admin/rabbit/policies/{nombre}:
+    put:
+      operationId: guardarPolitica
+      summary: Crear o reemplazar una política de retención (en caliente)
+      tags:
+      - Mensajería
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: PUT
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/policies/{nombre}
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: nombre
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9][a-zA-Z0-9._-]*$
+    delete:
+      operationId: eliminarPolitica
+      summary: Eliminar una política
+      tags:
+      - Mensajería
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: DELETE
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/policies/{nombre}
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: nombre
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9][a-zA-Z0-9._-]*$
+  /api/admin/rabbit/queues/{nombre}/reprocesar:
+    post:
+      operationId: reprocesarDlq
+      summary: Devolver mensajes de una DLQ a su cola de origen
+      tags:
+      - Mensajería
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/queues/{nombre}/reprocesar
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: nombre
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9][a-zA-Z0-9._-]*$
+      - name: max
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000
+  /api/admin/rabbit/nodes:
+    get:
+      operationId: listarNodos
+      summary: Nodos del clúster RabbitMQ
+      tags:
+      - RabbitMQ Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/nodes
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/admin/rabbit/queues:
+    get:
+      operationId: listarColas
+      summary: Listar colas
+      tags:
+      - RabbitMQ Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/queues
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+    post:
+      operationId: crearCola
+      summary: Crear cola (opcionalmente con DLQ)
+      tags:
+      - RabbitMQ Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/queues
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/admin/rabbit/queues/{nombre}:
+    get:
+      operationId: obtenerCola
+      summary: Detalle de una cola
+      tags:
+      - RabbitMQ Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/queues/{nombre}
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: nombre
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9][a-zA-Z0-9._-]*$
+    delete:
+      operationId: eliminarCola
+      summary: Eliminar cola
+      tags:
+      - RabbitMQ Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: DELETE
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/queues/{nombre}
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: nombre
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9][a-zA-Z0-9._-]*$
+      - name: soloSiVacia
+        in: query
+        required: false
+        schema:
+          type: boolean
+  /api/admin/rabbit/queues/{nombre}/messages:
+    post:
+      operationId: publicarPrueba
+      summary: Publicar mensajes de prueba (colas fuera de la topología base)
+      tags:
+      - RabbitMQ Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/queues/{nombre}/messages
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: nombre
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9][a-zA-Z0-9._-]*$
+    delete:
+      operationId: purgarCola
+      summary: Purgar mensajes de una cola
+      tags:
+      - RabbitMQ Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: DELETE
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/queues/{nombre}/messages
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: nombre
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9][a-zA-Z0-9._-]*$
+  /api/admin/rabbit/exchanges:
+    get:
+      operationId: listarExchanges
+      summary: Listar exchanges
+      tags:
+      - RabbitMQ Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/exchanges
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+    post:
+      operationId: crearExchange
+      summary: Crear exchange (DIRECT, TOPIC, FANOUT)
+      tags:
+      - RabbitMQ Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/exchanges
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/admin/rabbit/exchanges/{nombre}:
+    delete:
+      operationId: eliminarExchange
+      summary: Eliminar exchange
+      tags:
+      - RabbitMQ Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: DELETE
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/exchanges/{nombre}
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: nombre
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9][a-zA-Z0-9._-]*$
+  /api/admin/rabbit/bindings:
+    get:
+      operationId: listarBindings
+      summary: Listar bindings
+      tags:
+      - RabbitMQ Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/bindings
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+    post:
+      operationId: crearBinding
+      summary: Crear binding exchange -> cola
+      tags:
+      - RabbitMQ Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/bindings
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+    delete:
+      operationId: eliminarBinding
+      summary: Eliminar binding
+      tags:
+      - RabbitMQ Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: DELETE
+        uri: http://IP_BACKEND:8080/api/admin/rabbit/bindings
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: exchange
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: cola
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: routingKey
+        in: query
+        required: false
+        schema:
+          type: string
+  /api/analitica/resumen:
+    get:
+      operationId: resumenAnalitica
+      summary: Métricas en tiempo real calculadas por el consumer group analitica-eventos (Kafka)
+      tags:
+      - Streaming
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/analitica/resumen
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/analitica/alertas:
+    get:
+      operationId: alertasStream
+      summary: Alertas de negocio detectadas por el consumer group analitica-alertas
+      tags:
+      - Streaming
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/analitica/alertas
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/analitica/estados:
+    get:
+      operationId: vistaEstados
+      summary: Estado actual de cada pedido reconstruido desde el topic compactado pedidos.estados
+      tags:
+      - Streaming
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/analitica/estados
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/analitica/dlt:
+    get:
+      operationId: mensajesDlt
+      summary: Mensajes del Dead Letter Topic con su motivo de error
+      tags:
+      - Streaming
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/analitica/dlt
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/analitica/consumidores:
+    get:
+      operationId: listarConsumidoresKafka
+      summary: Listeners Kafka con su consumer group y particiones asignadas
+      tags:
+      - Streaming
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/analitica/consumidores
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/analitica/consumidores/{id}/{accion}:
+    post:
+      operationId: cambiarConsumidorKafka
+      summary: Pausar o reanudar un listener Kafka (el lag del grupo sube mientras está pausado)
+      tags:
+      - Streaming
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://IP_BACKEND:8080/api/analitica/consumidores/{id}/{accion}
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+          - analitica-eventos
+          - analitica-alertas
+          - analitica-estados
+          - monitor-dlt
+      - name: accion
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+          - pausar
+          - reanudar
+  /api/admin/kafka/cluster:
+    get:
+      operationId: clusterKafka
+      summary: Brokers del clúster y controlador
+      tags:
+      - Kafka Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/admin/kafka/cluster
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/admin/kafka/salud:
+    get:
+      operationId: saludKafka
+      summary: Salud del clúster (brokers, particiones sub-replicadas o sin líder, lag por grupo) con su impacto
+      tags:
+      - Kafka Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/admin/kafka/salud
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/admin/kafka/topics:
+    get:
+      operationId: listarTopics
+      summary: Listar topics con particiones, réplicas, retención y política de limpieza
+      tags:
+      - Kafka Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/admin/kafka/topics
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+    post:
+      operationId: crearTopic
+      summary: Crear topic (particiones, factor de replicación, retención, cleanup.policy, min.insync.replicas)
+      tags:
+      - Kafka Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://IP_BACKEND:8080/api/admin/kafka/topics
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/admin/kafka/topics/{nombre}:
+    get:
+      operationId: obtenerTopic
+      summary: Detalle por partición (líder, réplicas, ISR, offsets) y configuración
+      tags:
+      - Kafka Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/admin/kafka/topics/{nombre}
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: nombre
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9][a-zA-Z0-9._-]*$
+    delete:
+      operationId: eliminarTopic
+      summary: Eliminar topic (los topics del sistema están protegidos)
+      tags:
+      - Kafka Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: DELETE
+        uri: http://IP_BACKEND:8080/api/admin/kafka/topics/{nombre}
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: nombre
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9][a-zA-Z0-9._-]*$
+  /api/admin/kafka/topics/{nombre}/configs:
+    patch:
+      operationId: actualizarConfigsTopic
+      summary: Modificar o restablecer configuraciones del topic (retención, limpieza, min ISR...)
+      tags:
+      - Kafka Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: PATCH
+        uri: http://IP_BACKEND:8080/api/admin/kafka/topics/{nombre}/configs
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: nombre
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9][a-zA-Z0-9._-]*$
+  /api/admin/kafka/topics/{nombre}/particiones:
+    post:
+      operationId: aumentarParticiones
+      summary: Aumentar el número de particiones
+      tags:
+      - Kafka Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://IP_BACKEND:8080/api/admin/kafka/topics/{nombre}/particiones
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: nombre
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9][a-zA-Z0-9._-]*$
+  /api/admin/kafka/topics/{nombre}/mensajes:
+    post:
+      operationId: publicarMensajeKafka
+      summary: Publicar un mensaje de prueba (texto libre, puede ser JSON inválido para probar el DLT)
+      tags:
+      - Kafka Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://IP_BACKEND:8080/api/admin/kafka/topics/{nombre}/mensajes
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: nombre
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9][a-zA-Z0-9._-]*$
+  /api/admin/kafka/grupos:
+    get:
+      operationId: listarGruposKafka
+      summary: Consumer groups con estado, consumidores y lag total
+      tags:
+      - Kafka Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/admin/kafka/grupos
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/admin/kafka/grupos/{grupo}:
+    get:
+      operationId: obtenerGrupoKafka
+      summary: Consumidores, particiones asignadas, offsets confirmados y lag por partición
+      tags:
+      - Kafka Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/admin/kafka/grupos/{grupo}
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: grupo
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9._-]+$
+    delete:
+      operationId: eliminarGrupoKafka
+      summary: Eliminar un consumer group sin consumidores (los del sistema están protegidos)
+      tags:
+      - Kafka Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: DELETE
+        uri: http://IP_BACKEND:8080/api/admin/kafka/grupos/{grupo}
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: grupo
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9._-]+$
+  /api/admin/kafka/grupos/{grupo}/offsets:
+    post:
+      operationId: resetearOffsets
+      summary: Mover los offsets del grupo al inicio (reprocesar) o al final (saltar pendientes)
+      tags:
+      - Kafka Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://IP_BACKEND:8080/api/admin/kafka/grupos/{grupo}/offsets
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: grupo
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9._-]+$
+  /api/admin/kafka/plantillas:
+    get:
+      operationId: listarPlantillasKafka
+      summary: Mensajes de negocio de ejemplo (también para pegar en Kafka UI)
+      tags:
+      - Kafka Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/admin/kafka/plantillas
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/admin/kafka/plantillas/{id}/publicar:
+    post:
+      operationId: publicarPlantillaKafka
+      summary: Publicar una plantilla de negocio
+      tags:
+      - Kafka Admin
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://IP_BACKEND:8080/api/admin/kafka/plantillas/{id}/publicar
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+          - pedido-normal
+          - pedido-alto-monto
+          - pedido-cancelado
+          - snapshot-estado
+          - fallo-transitorio
+          - evento-invalido
+          - json-corrupto
+components:
+  securitySchemes:
+    cognito:
+      type: oauth2
+      flows: {}
+      x-amazon-apigateway-authorizer:
+        type: jwt
+        identitySource: $request.header.Authorization
+        jwtConfiguration:
+          issuer: https://cognito-idp.REGION.amazonaws.com/USER_POOL_ID
+          audience:
+          - CLIENT_ID_COGNITO

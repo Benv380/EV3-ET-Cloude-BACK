@@ -1,0 +1,36 @@
+server:
+  port: ${PORT:8085}
+
+spring:
+  application:
+    name: analitica-service
+  config:
+    # Seguridad JWT y configuración de Kafka: centralizadas en pedidos-common y pedidos-streaming
+    import:
+      - classpath:seguridad.yml
+      - classpath:streaming.yml
+  autoconfigure:
+    # Este servicio solo usa Kafka: se desactiva la infraestructura de RabbitMQ de pedidos-common.
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+      - cl.duoc.pedidos.common.mensajeria.config.MensajeriaAutoConfiguration
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pedidos}
+    username: ${DB_USER:pedidos}
+    password: ${DB_PASSWORD:pedidos123}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+analitica:
+  # Regla de tiempo real: un pedido igual o mayor a este monto genera una alerta ALTO_MONTO.
+  umbral-alto-monto: ${ANALITICA_UMBRAL_ALTO_MONTO:1000000}
+  # Ventana del gráfico "eventos por minuto".
+  ventana-minutos: 15
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

@@ -1,0 +1,30 @@
+server:
+  port: ${PORT:8086}
+
+spring:
+  application:
+    name: kafka-admin-service
+  config:
+    import:
+      - classpath:seguridad.yml
+      - classpath:streaming.yml
+  autoconfigure:
+    # Este servicio solo administra Kafka: se desactiva la infraestructura de RabbitMQ de pedidos-common.
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+      - cl.duoc.pedidos.common.mensajeria.config.MensajeriaAutoConfiguration
+
+kafka-admin:
+  # Brokers que debe tener el clúster (para alertas de salud).
+  brokers-esperados: ${KAFKA_BROKERS_ESPERADOS:3}
+  # Límites para topics creados desde la API.
+  max-particiones: 12
+  # Sobre este lag (mensajes pendientes) un consumer group se considera atrasado.
+  umbral-lag: 100
+  timeout-ms: 10000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

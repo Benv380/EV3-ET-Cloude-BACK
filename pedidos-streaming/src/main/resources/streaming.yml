@@ -1,0 +1,130 @@
+# =====================================================================================
+#  CONFIGURACIÓN CENTRALIZADA DE STREAMING (Apache Kafka)
+#
+#  Único lugar con: brokers, serializadores, propiedades avanzadas del productor/consumidor,
+#  topics (particiones, réplicas, retención, limpieza), consumer groups y reintentos.
+#  Los microservicios lo importan con  spring.config.import: classpath:streaming.yml
+#
+#  Topología:
+#
+#   pedidos-service ──► [pedidos.eventos]  3 particiones x 3 réplicas · cleanup=delete · 7 días
+#        │               clave = pedidoId → todos los eventos de un pedido van a la MISMA partición (orden)
+#        │                 ├─► grupo analitica-eventos  (3 consumidores: 1 partición c/u → balanceo)
+#        │                 └─► grupo analitica-alertas  (1 consumidor: recibe las 3 particiones)
+#        │
+#        └────────────► [pedidos.estados]  3 particiones x 3 réplicas · cleanup=compact
+#                        clave = pedidoId → Kafka conserva SOLO el último estado de cada pedido
+#                          └─► grupo analitica-estados (reconstruye la vista al iniciar)
+#
+#   Errores en cualquier consumidor ─► reintentos (1s, 2s, 4s) ─► [pedidos.dlt] (14 días)
+#                                                                    └─► grupo monitor-dlt
+# =====================================================================================
+spring:
+  kafka:
+    # Los 3 brokers. Si uno cae, el cliente sigue con los otros (solo necesita alcanzar uno para descubrir el resto).
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092,localhost:9093,localhost:9094}
+    client-id: ${spring.application.name:pedidos360}
+
+    producer:
+      # acks=all: el líder confirma solo cuando las réplicas en sincronía (min.insync.replicas=2) tienen el mensaje.
+      acks: all
+      retries: 10
+      batch-size: 16384
+      compression-type: lz4
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # El serializador JSON real se registra en StreamingAutoConfiguration (usa el ObjectMapper de Spring:
+      # fechas ISO-8601). Esta clase es el respaldo si se crea un productor fuera de Spring.
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        # Idempotencia: un reintento del productor nunca duplica el mensaje en el broker.
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        # Espera hasta 5 ms para agrupar mensajes en un mismo lote (más rendimiento, latencia mínima).
+        linger.ms: 5
+        # Tiempo máximo total para entregar un mensaje (incluye reintentos).
+        delivery.timeout.ms: 30000
+        request.timeout.ms: 10000
+        # Si no hay brokers disponibles, send() falla a los 5 s en vez de bloquear la petición HTTP 60 s.
+        max.block.ms: 5000
+        # El tipo del evento lo define cada consumidor (spring.json.value.default.type), no un header de Java.
+        spring.json.add.type.headers: false
+
+    consumer:
+      # Un grupo nuevo empieza desde el mensaje más antiguo retenido (no se pierde historia).
+      auto-offset-reset: earliest
+      # El offset lo confirma el contenedor de Spring DESPUÉS de procesar cada registro (ack-mode: record).
+      enable-auto-commit: false
+      max-poll-records: 50
+      isolation-level: read_committed
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      # ErrorHandlingDeserializer: un JSON corrupto no bota al consumidor; se envía directo al DLT.
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.trusted.packages: cl.duoc.pedidos.streaming.evento
+        spring.json.use.type.headers: false
+        # Rebalanceo incremental: al entrar/salir un consumidor solo se mueven las particiones necesarias.
+        partition.assignment.strategy: org.apache.kafka.clients.consumer.CooperativeStickyAssignor
+        # Si un consumidor no envía heartbeat en 15 s se le considera caído y sus particiones se reasignan.
+        session.timeout.ms: 15000
+        heartbeat.interval.ms: 5000
+        max.poll.interval.ms: 300000
+        fetch.max.wait.ms: 500
+
+    listener:
+      ack-mode: record
+      # Un hilo consumidor por partición (3 particiones -> 3 consumidores en el grupo).
+      concurrency: 3
+      missing-topics-fatal: false
+
+    admin:
+      # Si al iniciar no se pueden crear/verificar los topics, el servicio se reinicia y vuelve a intentar.
+      fail-fast: true
+
+streaming:
+  # Crear los topics al iniciar (si no existen). Idempotente: no modifica topics existentes.
+  crear-topicos: ${KAFKA_CREAR_TOPICOS:true}
+
+  topicos:
+    eventos:
+      nombre: pedidos.eventos
+      particiones: 3
+      replicas: 3
+      configs:
+        "[cleanup.policy]": delete
+        "[retention.ms]": "604800000"        # 7 días: ventana para re-procesar o recalcular métricas
+        "[retention.bytes]": "1073741824"    # y como máximo 1 GB por partición (lo que ocurra primero)
+        "[min.insync.replicas]": "2"         # con acks=all tolera la caída de 1 broker sin perder escrituras
+        "[segment.ms]": "86400000"           # segmentos diarios: la limpieza borra días completos
+    estados:
+      nombre: pedidos.estados
+      particiones: 3
+      replicas: 3
+      configs:
+        "[cleanup.policy]": compact          # se conserva el último valor de cada clave (pedidoId)
+        "[min.insync.replicas]": "2"
+        "[min.cleanable.dirty.ratio]": "0.1" # compacta seguido (con 10% de registros obsoletos)
+        "[segment.ms]": "3600000"            # segmentos de 1 hora para que la compactación actúe pronto
+        "[delete.retention.ms]": "86400000"  # los tombstones (valor null) se mantienen 1 día
+    dlt:
+      nombre: pedidos.dlt
+      particiones: 3
+      replicas: 3
+      configs:
+        "[cleanup.policy]": delete
+        "[retention.ms]": "1209600000"       # 14 días para revisar los mensajes con error
+        "[min.insync.replicas]": "2"
+
+  grupos:
+    analitica: analitica-eventos
+    alertas: analitica-alertas
+    estados: analitica-estados
+    dlt: monitor-dlt
+
+  # Errores recuperables: 3 reintentos con espera exponencial (1 s, 2 s, 4 s) y luego al DLT.
+  # Errores no recuperables (payload inválido, JSON corrupto): directo al DLT, sin reintentos.
+  reintentos:
+    maximo: 3
+    espera-inicial-ms: 1000
+    multiplicador: 2.0
+    espera-maxima-ms: 10000
