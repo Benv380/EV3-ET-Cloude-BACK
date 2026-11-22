@@ -79,6 +79,8 @@ fi
 existe az postgres flexible-server db show -g "$RG" -s "$PG" -n pedidos   || az postgres flexible-server db create -g "$RG" -s "$PG" -n pedidos -o none
 
 paso "Firewall de PostgreSQL: solo la IP de la VM"
+# Acceso por red pública habilitado, pero el firewall solo deja entrar a la IP de la VM.
+az postgres flexible-server update -g "$RG" -n "$PG" --public-access Enabled -o none
 az postgres flexible-server firewall-rule create -g "$RG" -s "$PG" -n vm-pedidos360   --start-ip-address "$VM_IP" --end-ip-address "$VM_IP" -o none
 
 paso "Resumen"
