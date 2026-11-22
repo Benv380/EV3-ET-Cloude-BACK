@@ -26,10 +26,11 @@ public record StreamingProperties(
         @NotNull @Valid Grupos grupos,
         @NotNull @Valid Reintentos reintentos) {
 
-    public record Topicos(@NotNull @Valid Topico eventos, @NotNull @Valid Topico estados, @NotNull @Valid Topico dlt) {
+    public record Topicos(@NotNull @Valid Topico eventos, @NotNull @Valid Topico estados, @NotNull @Valid Topico dlt,
+                          @NotNull @Valid Topico bloqueos) {
 
         public List<Topico> todos() {
-            return List.of(eventos, estados, dlt);
+            return List.of(eventos, estados, dlt, bloqueos);
         }
 
         /** Topics del sistema: el microservicio de administración no permite eliminarlos. */
@@ -54,10 +55,10 @@ public record StreamingProperties(
     }
 
     public record Grupos(@NotBlank String analitica, @NotBlank String alertas, @NotBlank String estados,
-                         @NotBlank String dlt) {
+                         @NotBlank String dlt, @NotBlank String bloqueosPedidos, @NotBlank String bloqueosAnalitica) {
 
         public List<String> todos() {
-            return List.of(analitica, alertas, estados, dlt);
+            return List.of(analitica, alertas, estados, dlt, bloqueosPedidos, bloqueosAnalitica);
         }
     }
 

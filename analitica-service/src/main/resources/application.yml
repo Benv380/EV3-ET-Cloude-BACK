@@ -28,6 +28,13 @@ analitica:
   umbral-alto-monto: ${ANALITICA_UMBRAL_ALTO_MONTO:1000000}
   # Ventana del gráfico "eventos por minuto".
   ventana-minutos: 15
+  # Posible fraude: más de max-pedidos de un mismo usuario dentro de la ventana, o un monto excesivo,
+  # bloquean al usuario (pedidos-service responde 403 hasta que venza o un administrador lo desbloquee).
+  fraude:
+    max-pedidos: ${FRAUDE_MAX_PEDIDOS:10}
+    ventana-segundos: ${FRAUDE_VENTANA_SEGUNDOS:60}
+    monto-maximo: ${FRAUDE_MONTO_MAXIMO:10000000}
+    bloqueo-minutos: ${FRAUDE_BLOQUEO_MINUTOS:15}
 
 management:
   endpoints:

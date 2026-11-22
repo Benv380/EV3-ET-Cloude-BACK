@@ -25,10 +25,13 @@ public class PedidoService {
 
     private final PedidoRepository repositorio;
     private final List<EventosPedidoPublisher> publicadores;
+    private final VerificadorBloqueos bloqueos;
 
-    public PedidoService(PedidoRepository repositorio, List<EventosPedidoPublisher> publicadores) {
+    public PedidoService(PedidoRepository repositorio, List<EventosPedidoPublisher> publicadores,
+                         VerificadorBloqueos bloqueos) {
         this.repositorio = repositorio;
         this.publicadores = List.copyOf(publicadores);
+        this.bloqueos = bloqueos;
     }
 
     @Transactional(readOnly = true)
@@ -44,6 +47,10 @@ public class PedidoService {
 
     @Transactional
     public Pedido crear(CrearPedidoRequest solicitud) {
+        // Bloqueo por posible fraude decidido por analitica-service y recibido por Kafka (pedidos.bloqueos).
+        bloqueos.bloqueoVigente(UsuarioActual.nombre()).ifPresent(b -> {
+            throw new UsuarioBloqueadoException(b);
+        });
         Pedido pedido = repositorio.save(new Pedido(solicitud.cliente().trim(), solicitud.emailCliente().trim(),
                 solicitud.descripcion().trim(), solicitud.total(), UsuarioActual.nombre()));
         PedidoEvento evento = evento(TipoEvento.PEDIDO_CREADO, pedido, null, solicitud.simularFallo());

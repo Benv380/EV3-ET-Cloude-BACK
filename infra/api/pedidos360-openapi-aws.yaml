@@ -816,6 +816,46 @@ paths:
           enum:
           - pausar
           - reanudar
+  /api/analitica/bloqueos:
+    get:
+      operationId: listarBloqueos
+      summary: Usuarios bloqueados por posible fraude (desde el topic compactado pedidos.bloqueos)
+      tags:
+      - Streaming
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://IP_BACKEND:8080/api/analitica/bloqueos
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+  /api/analitica/bloqueos/{usuario}/desbloquear:
+    post:
+      operationId: desbloquearUsuario
+      summary: Desbloquear manualmente a un usuario (publica activo=false en pedidos.bloqueos)
+      tags:
+      - Streaming
+      security:
+      - cognito: []
+      responses:
+        default:
+          description: Respuesta del backend (proxy)
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://IP_BACKEND:8080/api/analitica/bloqueos/{usuario}/desbloquear
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+      parameters:
+      - name: usuario
+        in: path
+        required: true
+        schema:
+          type: string
   /api/admin/kafka/cluster:
     get:
       operationId: clusterKafka

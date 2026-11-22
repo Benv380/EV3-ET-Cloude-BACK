@@ -1,0 +1,394 @@
+{
+  "info": {
+    "name": "Pedidos 360 EV3 · API Manager + bloqueo por posible fraude",
+    "description": "Login con Amazon Cognito (OAuth 2.0 Authorization Code + PKCE) y pruebas contra Azure API Management (baseUrl) o AWS API Gateway (baseUrlAws).\n\n1) Pestaña Authorization de la colección → Get New Access Token → iniciar sesión → Use Token.\n2) Carpeta 1: el API Manager rechaza sin token / token inválido (401) y acepta el token válido (200).\n3) Carpeta 2 con el Runner (1000 iteraciones): los primeros pedidos dan 201; al superar 10 pedidos en 60 s, Kafka detecta POSIBLE FRAUDE, publica el bloqueo en pedidos.bloqueos y pedidos-service responde 403 al resto.\n4) Carpeta 3: ver el bloqueo y desbloquear.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "oauth2",
+    "oauth2": [
+      {
+        "key": "grant_type",
+        "value": "authorization_code_with_pkce",
+        "type": "string"
+      },
+      {
+        "key": "authUrl",
+        "value": "https://us-east-15ejigwvjd.auth.us-east-1.amazoncognito.com/oauth2/authorize",
+        "type": "string"
+      },
+      {
+        "key": "accessTokenUrl",
+        "value": "https://us-east-15ejigwvjd.auth.us-east-1.amazoncognito.com/oauth2/token",
+        "type": "string"
+      },
+      {
+        "key": "clientId",
+        "value": "5he9h20pmen4d2kflq7fe7pi6u",
+        "type": "string"
+      },
+      {
+        "key": "scope",
+        "value": "openid email profile",
+        "type": "string"
+      },
+      {
+        "key": "useBrowser",
+        "value": true,
+        "type": "boolean"
+      },
+      {
+        "key": "redirect_uri",
+        "value": "https://oauth.pstmn.io/v1/callback",
+        "type": "string"
+      },
+      {
+        "key": "client_authentication",
+        "value": "body",
+        "type": "string"
+      },
+      {
+        "key": "challengeAlgorithm",
+        "value": "S256",
+        "type": "string"
+      },
+      {
+        "key": "tokenName",
+        "value": "Cognito Pedidos 360",
+        "type": "string"
+      },
+      {
+        "key": "addTokenTo",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://apim-pedidos360-ev3-f09d30.azure-api.net",
+      "type": "string"
+    },
+    {
+      "key": "baseUrlAws",
+      "value": "https://bjrnsdund2.execute-api.us-east-1.amazonaws.com",
+      "type": "string"
+    },
+    {
+      "key": "usuario",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "creados",
+      "value": "0",
+      "type": "string"
+    },
+    {
+      "key": "bloqueados",
+      "value": "0",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Seguridad del API Manager (JWT)",
+      "item": [
+        {
+          "name": "Sin token → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pedidos"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('API Manager rechaza la petición sin token (401)', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Token inválido → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pedidos"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiJ9.e30.token-falso",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('API Manager rechaza un token inválido (401)', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Token válido de Cognito → 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pedidos"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Con el JWT de Cognito la petición pasa (200)', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve la lista de pedidos', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Prueba de fraude (Runner: 1000 iteraciones)",
+      "item": [
+        {
+          "name": "Crear pedido (ráfaga)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pedidos"
+              ]
+            },
+            "description": "Ejecutar con el Runner: Iterations 1000, Delay 0 ms. Resultado esperado: ~10 × 201 y luego 403.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cliente\": \"Cliente Postman {{n}}\",\n  \"emailCliente\": \"postman{{n}}@ejemplo.cl\",\n  \"descripcion\": \"Pedido de prueba de carga #{{n}}\",\n  \"total\": \"{{total}}\",\n  \"simularFallo\": \"NINGUNA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Datos distintos en cada iteración del Runner",
+                  "const n = pm.info.iteration + 1;",
+                  "pm.variables.set('n', n);",
+                  "pm.variables.set('total', Math.floor(10000 + Math.random() * 90000));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const codigo = pm.response.code;",
+                  "const ok = (pm.collectionVariables.get('creados') | 0);",
+                  "const bloq = (pm.collectionVariables.get('bloqueados') | 0);",
+                  "if (codigo === 201) { pm.collectionVariables.set('creados', ok + 1); }",
+                  "if (codigo === 403) { pm.collectionVariables.set('bloqueados', bloq + 1); }",
+                  "",
+                  "pm.test('Respuesta esperada: 201 (creado) o 403 (bloqueado por posible fraude)', () => {",
+                  "    pm.expect([201, 403]).to.include(codigo);",
+                  "});",
+                  "if (codigo === 403) {",
+                  "    pm.test('El 403 indica bloqueo por posible fraude', () => {",
+                  "        const pd = pm.response.json();",
+                  "        pm.expect(pd.title).to.include('fraude');",
+                  "        pm.expect(pd.regla).to.be.a('string');",
+                  "    });",
+                  "}",
+                  "console.log(`#${pm.info.iteration + 1} -> ${codigo} | creados=${pm.collectionVariables.get('creados')} bloqueados=${pm.collectionVariables.get('bloqueados')}`);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Ver y quitar el bloqueo",
+      "item": [
+        {
+          "name": "Bloqueos activos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analitica/bloqueos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analitica",
+                "bloqueos"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const lista = pm.response.json();",
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const vigente = lista.find(b => b.vigente);",
+                  "if (vigente) { pm.collectionVariables.set('usuario', vigente.usuario); }",
+                  "pm.test('Hay un usuario bloqueado por posible fraude', () => pm.expect(vigente).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear pedido estando bloqueado → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pedidos"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cliente\": \"Cliente bloqueado\",\n  \"emailCliente\": \"bloqueado@ejemplo.cl\",\n  \"descripcion\": \"Debe rechazarse\",\n  \"total\": 1000,\n  \"simularFallo\": \"NINGUNA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('pedidos-service rechaza al usuario bloqueado (403)', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desbloquear usuario",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analitica/bloqueos/{{usuario}}/desbloquear",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analitica",
+                "bloqueos",
+                "{{usuario}}",
+                "desbloquear"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Desbloqueo publicado (200)', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('creados', '0');",
+                  "pm.collectionVariables.set('bloqueados', '0');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

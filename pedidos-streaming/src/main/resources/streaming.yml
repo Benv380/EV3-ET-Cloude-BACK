@@ -16,6 +16,11 @@
 #                        clave = pedidoId → Kafka conserva SOLO el último estado de cada pedido
 #                          └─► grupo analitica-estados (reconstruye la vista al iniciar)
 #
+#   analitica-alertas detecta POSIBLE FRAUDE (ráfaga de pedidos de un usuario o monto excesivo)
+#        └────────────► [pedidos.bloqueos] 3 particiones x 3 réplicas · cleanup=compact · clave = usuario
+#                          ├─► grupo pedidos-bloqueos   (pedidos-service rechaza con 403 los pedidos del usuario)
+#                          └─► grupo analitica-bloqueos (dashboard: bloqueos activos y botón desbloquear)
+#
 #   Errores en cualquier consumidor ─► reintentos (1s, 2s, 4s) ─► [pedidos.dlt] (14 días)
 #                                                                    └─► grupo monitor-dlt
 # =====================================================================================
@@ -106,6 +111,16 @@ streaming:
         "[min.cleanable.dirty.ratio]": "0.1" # compacta seguido (con 10% de registros obsoletos)
         "[segment.ms]": "3600000"            # segmentos de 1 hora para que la compactación actúe pronto
         "[delete.retention.ms]": "86400000"  # los tombstones (valor null) se mantienen 1 día
+    bloqueos:
+      nombre: pedidos.bloqueos
+      particiones: 3
+      replicas: 3
+      configs:
+        "[cleanup.policy]": compact          # último estado de bloqueo por usuario (clave = usuario)
+        "[min.insync.replicas]": "2"
+        "[min.cleanable.dirty.ratio]": "0.1"
+        "[segment.ms]": "3600000"
+        "[delete.retention.ms]": "86400000"
     dlt:
       nombre: pedidos.dlt
       particiones: 3
@@ -120,6 +135,8 @@ streaming:
     alertas: analitica-alertas
     estados: analitica-estados
     dlt: monitor-dlt
+    bloqueos-pedidos: pedidos-bloqueos        # pedidos-service: rechaza pedidos de usuarios bloqueados
+    bloqueos-analitica: analitica-bloqueos    # analitica-service: vista de bloqueos para el dashboard
 
   # Errores recuperables: 3 reintentos con espera exponencial (1 s, 2 s, 4 s) y luego al DLT.
   # Errores no recuperables (payload inválido, JSON corrupto): directo al DLT, sin reintentos.

@@ -28,12 +28,13 @@ class PedidoServiceTest {
     private PedidoRepository repositorio;
     private EventosPedidoPublisher eventos;
     private PedidoService servicio;
+    private Optional<BloqueoVigente> bloqueo = Optional.empty();
 
     @BeforeEach
     void preparar() {
         repositorio = mock(PedidoRepository.class);
         eventos = mock(EventosPedidoPublisher.class);
-        servicio = new PedidoService(repositorio, List.of(eventos));
+        servicio = new PedidoService(repositorio, List.of(eventos), usuario -> bloqueo);
         when(repositorio.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 
@@ -101,5 +102,17 @@ class PedidoServiceTest {
 
     private static Pedido pedido() {
         return new Pedido("Ana", "ana@correo.cl", "Notebook", new BigDecimal("500000"), "ana");
+    }
+
+    @Test
+    void usuarioBloqueadoPorFraudeNoPuedeCrearPedidos() {
+        bloqueo = Optional.of(new BloqueoVigente("ana", "RAFAGA_DE_PEDIDOS", "11 pedidos en 60 s",
+                java.time.Instant.now().plusSeconds(900)));
+        assertThatThrownBy(() -> servicio.crear(new CrearPedidoRequest("Ana", "ana@correo.cl", "Notebook",
+                new BigDecimal("1000"), SimulacionFallo.NINGUNA)))
+                .isInstanceOf(UsuarioBloqueadoException.class)
+                .hasMessageContaining("posible fraude");
+        verify(repositorio, never()).save(any());
+        verify(eventos, never()).publicarPedidoCreado(any());
     }
 }

@@ -39,6 +39,7 @@ public class AlertasService {
             case ALTO_MONTO -> "Pedido de $" + e.total().toPlainString() + " supera el umbral de $"
                     + props.umbralAltoMonto().toPlainString();
             case CANCELACION -> "Pedido cancelado (estaba " + e.estadoAnterior() + ")";
+            case FRAUDE -> "Posible fraude";
         };
         AlertaStream alerta = repositorio.save(new AlertaStream(e.eventoId(), tipo.get(), e.pedidoId(), e.cliente(),
                 e.total(), detalle, meta.particion(), meta.offset(), e.fecha()));

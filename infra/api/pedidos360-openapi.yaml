@@ -39,6 +39,7 @@ paths:
         '201': { description: Creado, content: { application/json: { schema: { $ref: '#/components/schemas/Pedido' } } } }
         '400': { $ref: '#/components/responses/Invalido' }
         '401': { $ref: '#/components/responses/NoAutorizado' }
+        '403': { description: Usuario bloqueado por posible fraude (ráfaga de pedidos o monto excesivo) }
   /pedidos/{id}:
     get:
       tags: [Pedidos]
@@ -361,6 +362,24 @@ paths:
       responses:
         '200': { description: OK }
         '404': { $ref: '#/components/responses/NoEncontrado' }
+  /analitica/bloqueos:
+    get:
+      tags: [Streaming]
+      operationId: listarBloqueos
+      summary: Usuarios bloqueados por posible fraude (desde el topic compactado pedidos.bloqueos)
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+  /analitica/bloqueos/{usuario}/desbloquear:
+    post:
+      tags: [Streaming]
+      operationId: desbloquearUsuario
+      summary: Desbloquear manualmente a un usuario (publica activo=false en pedidos.bloqueos)
+      parameters:
+        - { name: usuario, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
   /admin/kafka/cluster:
     get:
       tags: [Kafka Admin]
