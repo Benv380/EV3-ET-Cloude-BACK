@@ -1,13 +1,14 @@
 <!--
   Política de la API "Pedidos 360 API" en Azure API Management usando Amazon Cognito como IDaaS
   (Design → All operations → Inbound processing → </>).
+  Plantilla: infra/azure/03-registrar-api-apim.sh reemplaza ORIGEN_FRONTEND, COGNITO_ISSUER y COGNITO_CLIENT_ID.
 
   1) CORS: permite al frontend (otro dominio) llamar a la API y responde los preflight OPTIONS sin token.
   2) validate-jwt: rechaza con 401 lo que no traiga un access token válido de Cognito:
      - firma verificada con las llaves públicas (JWKS) del user pool (openid-config)
      - emisor (iss) = user pool de Cognito
      - expiración (exp) obligatoria
-     - client_id = app cliente pedidos360-spa (Cognito no usa "aud" en los access tokens)
+     - client_id = app cliente de Cognito (Cognito no usa "aud" en los access tokens)
      - token_use = access (no se aceptan id tokens)
 -->
 <policies>
@@ -15,7 +16,7 @@
         <base />
         <cors allow-credentials="false">
             <allowed-origins>
-                <origin>https://pedidos360frontbenja.z1.web.core.windows.net</origin>
+                <origin>ORIGEN_FRONTEND</origin>
                 <origin>http://localhost:4200</origin>
             </allowed-origins>
             <allowed-methods preflight-result-max-age="600">
@@ -38,13 +39,13 @@
                       failed-validation-httpcode="401"
                       failed-validation-error-message="API Manager: token JWT ausente o inválido"
                       require-expiration-time="true" require-signed-tokens="true">
-            <openid-config url="https://cognito-idp.us-east-1.amazonaws.com/us-east-1_I5Mm0voNI/.well-known/openid-configuration" />
+            <openid-config url="COGNITO_ISSUER/.well-known/openid-configuration" />
             <issuers>
-                <issuer>https://cognito-idp.us-east-1.amazonaws.com/us-east-1_I5Mm0voNI</issuer>
+                <issuer>COGNITO_ISSUER</issuer>
             </issuers>
             <required-claims>
                 <claim name="client_id" match="any">
-                    <value>7m86tlt309sojlv0imqa9j6f5e</value>
+                    <value>COGNITO_CLIENT_ID</value>
                 </claim>
                 <claim name="token_use" match="any">
                     <value>access</value>
