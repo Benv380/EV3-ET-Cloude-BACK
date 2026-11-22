@@ -51,7 +51,8 @@ ENV
 cat /opt/pedidos360-secretos.env >> /opt/pedidos360/.env
 chmod 600 /opt/pedidos360/.env
 cd /opt/pedidos360
-nohup sh -c 'docker compose up -d --build' > /var/log/pedidos360-up.log 2>&1 &
+# Se compila un microservicio a la vez (con 8 GB de RAM, 6 compilaciones Maven en paralelo no caben).
+nohup sh -c 'for s in pedidos-service notificaciones-service documentos-service rabbit-admin-service analitica-service kafka-admin-service; do echo "### build \$s"; docker compose build \$s || exit 1; done; docker compose up -d && echo "### COMPOSE-UP-OK"' > /var/log/pedidos360-up.log 2>&1 &
 echo "COMPOSE=INICIADO"
 EOF
 )"
