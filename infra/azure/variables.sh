@@ -14,6 +14,8 @@ SUF="$(az account show --query id -o tsv | tr -d '-' | cut -c1-6)"
 
 VM="vm-pedidos360-ev3"
 VM_SIZE="${VM_SIZE:-Standard_B4ms}"
+# Regiones donde se intenta crear la VM, en orden (la primera con capacidad para la B4ms).
+VM_LOCS="${VM_LOCS:-$LOC westus3 northcentralus canadacentral mexicocentral}"
 APIM="apim-pedidos360-ev3-${SUF}"
 PG="psql-pedidos360-ev3-${SUF}"
 PG_ADMIN="pedidosadmin"

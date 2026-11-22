@@ -59,10 +59,20 @@ runcmd:
   - touch /opt/pedidos360-listo
 EOF
 if ! existe az vm show -g "$RG" -n "$VM"; then
-  az vm create -g "$RG" -n "$VM" -l "$LOC" --size "$VM_SIZE" --image Ubuntu2204 \
-    --admin-username azureuser --generate-ssh-keys --public-ip-sku Standard \
-    --os-disk-size-gb 64 --storage-sku StandardSSD_LRS --nsg-rule NONE \
-    --custom-data "$CLOUD_INIT" --tags "${TAGS[@]}" -o none
+  # La B4ms puede no tener capacidad en una región (SkuNotAvailable): se prueba en las regiones permitidas.
+  CREADA=""
+  for REGION_VM in ${VM_LOCS}; do
+    echo "Intentando crear la VM en $REGION_VM..."
+    if az vm create -g "$RG" -n "$VM" -l "$REGION_VM" --size "$VM_SIZE" --image Ubuntu2204 \
+        --admin-username azureuser --generate-ssh-keys --public-ip-sku Standard \
+        --os-disk-size-gb 64 --storage-sku StandardSSD_LRS --nsg-rule NONE \
+        --custom-data "$CLOUD_INIT" --tags "${TAGS[@]}" -o none 2> "$HOME/vm-error.log"; then
+      CREADA="$REGION_VM"; break
+    fi
+    grep -oE "(SkuNotAvailable|QuotaExceeded|RequestDisallowedByPolicy)[^.]*" "$HOME/vm-error.log" | head -1 || true
+  done
+  [[ -n "$CREADA" ]] || { echo "No se pudo crear la VM en ninguna región: $VM_LOCS"; cat "$HOME/vm-error.log"; exit 1; }
+  echo "VM creada en $CREADA"
 fi
 # Puertos públicos: 80 gateway (backend que usa API Management) · 8090 Kafka UI · 15672/15673 consolas RabbitMQ.
 # El 22 (SSH) queda cerrado: la VM se administra con "az vm run-command".
