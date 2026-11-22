@@ -76,7 +76,7 @@ if ! existe az postgres flexible-server show -g "$RG" -n "$PG"; then
   PG_TMP="Tmp$(openssl rand -hex 12)Aa1"
   az postgres flexible-server create -g "$RG" -n "$PG" -l "$VM_LOC"     --tier Burstable --sku-name Standard_B1ms --storage-size 32 --version 16     --admin-user "$PG_ADMIN" --admin-password "$PG_TMP" --public-access None     --backup-retention 7 --tags "${TAGS[@]}" --yes -o none
 fi
-existe az postgres flexible-server db show -g "$RG" -s "$PG" -d pedidos   || az postgres flexible-server db create -g "$RG" -s "$PG" -d pedidos -o none
+existe az postgres flexible-server db show -g "$RG" -s "$PG" -n pedidos   || az postgres flexible-server db create -g "$RG" -s "$PG" -n pedidos -o none
 
 paso "Firewall de PostgreSQL: solo la IP de la VM"
 az postgres flexible-server firewall-rule create -g "$RG" -s "$PG" -n vm-pedidos360   --start-ip-address "$VM_IP" --end-ip-address "$VM_IP" -o none
