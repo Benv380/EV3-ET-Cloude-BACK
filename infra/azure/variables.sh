@@ -13,9 +13,10 @@ TAGS=(Environment=Development Proyecto=Pedidos360-EV3)
 SUF="$(az account show --query id -o tsv | tr -d '-' | cut -c1-6)"
 
 VM="vm-pedidos360-ev3"
-VM_SIZE="${VM_SIZE:-Standard_B4ms}"
-# Regiones donde se intenta crear la VM, en orden (la primera con capacidad para la B4ms).
-VM_LOCS="${VM_LOCS:-$LOC westus3 northcentralus canadacentral mexicocentral}"
+# Tamaños de 16 GB que caben en la cuota de la suscripción, en orden de preferencia. Se prueba cada tamaño
+# en cada región hasta que uno tenga capacidad (Azure responde SkuNotAvailable cuando no hay stock).
+VM_SIZES="${VM_SIZES:-Standard_B4as_v2 Standard_B4s_v2 Standard_E2as_v5 Standard_D4as_v5 Standard_B4ms}"
+VM_LOCS="${VM_LOCS:-$LOC westus3 northcentralus}"
 APIM="apim-pedidos360-ev3-${SUF}"
 PG="psql-pedidos360-ev3-${SUF}"
 PG_ADMIN="pedidosadmin"

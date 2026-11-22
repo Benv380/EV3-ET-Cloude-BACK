@@ -61,15 +61,17 @@ EOF
 if ! existe az vm show -g "$RG" -n "$VM"; then
   # La B4ms puede no tener capacidad en una región (SkuNotAvailable): se prueba en las regiones permitidas.
   CREADA=""
-  for REGION_VM in ${VM_LOCS}; do
-    echo "Intentando crear la VM en $REGION_VM..."
-    if az vm create -g "$RG" -n "$VM" -l "$REGION_VM" --size "$VM_SIZE" --image Ubuntu2204 \
-        --admin-username azureuser --generate-ssh-keys --public-ip-sku Standard \
-        --os-disk-size-gb 64 --storage-sku StandardSSD_LRS --nsg-rule NONE \
-        --custom-data "$CLOUD_INIT" --tags "${TAGS[@]}" -o none 2> "$HOME/vm-error.log"; then
-      CREADA="$REGION_VM"; break
-    fi
-    grep -oE "(SkuNotAvailable|QuotaExceeded|RequestDisallowedByPolicy)[^.]*" "$HOME/vm-error.log" | head -1 || true
+  for TAM in ${VM_SIZES}; do
+    for REGION_VM in ${VM_LOCS}; do
+      echo "Intentando crear la VM $TAM en $REGION_VM..."
+      if az vm create -g "$RG" -n "$VM" -l "$REGION_VM" --size "$TAM" --image Ubuntu2204 \
+          --admin-username azureuser --generate-ssh-keys --public-ip-sku Standard \
+          --os-disk-size-gb 64 --storage-sku StandardSSD_LRS --nsg-rule NONE \
+          --custom-data "$CLOUD_INIT" --tags "${TAGS[@]}" -o none 2> "$HOME/vm-error.log"; then
+        CREADA="$TAM en $REGION_VM"; break 2
+      fi
+      grep -oE "(SkuNotAvailable|QuotaExceeded|RequestDisallowedByPolicy|OperationNotAllowed)[^.]*" "$HOME/vm-error.log" | head -1 || true
+    done
   done
   [[ -n "$CREADA" ]] || { echo "No se pudo crear la VM en ninguna región: $VM_LOCS"; cat "$HOME/vm-error.log"; exit 1; }
   echo "VM creada en $CREADA"
