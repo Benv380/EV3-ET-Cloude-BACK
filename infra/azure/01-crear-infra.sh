@@ -44,7 +44,7 @@ if ! existe az postgres flexible-server show -g "$RG" -n "$PG"; then
   PG_PID=$!
 fi
 
-paso "VM $VM ($VM_SIZE) con Docker"
+paso "VM $VM con Docker (tamaños a probar: $VM_SIZES)"
 CLOUD_INIT="$(mktemp)"
 cat > "$CLOUD_INIT" <<'EOF'
 #cloud-config
