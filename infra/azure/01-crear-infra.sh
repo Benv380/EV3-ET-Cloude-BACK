@@ -30,20 +30,6 @@ fi
 az storage blob service-properties update --account-name "$ST" --auth-mode key \
   --static-website --index-document index.html --404-document index.html -o none
 
-paso "PostgreSQL $PG (B1ms, se crea en segundo plano: ~5-10 min)"
-PG_LOG="$HOME/pg-create.log"
-if ! existe az postgres flexible-server show -g "$RG" -n "$PG"; then
-  # Clave temporal: el paso 2 la reemplaza por una nueva y la guarda en el .env de la VM.
-  PG_TMP="Tmp$(openssl rand -hex 12)Aa1"
-  ( az postgres flexible-server create -g "$RG" -n "$PG" -l "$LOC" \
-      --tier Burstable --sku-name Standard_B1ms --storage-size 32 --version 16 \
-      --admin-user "$PG_ADMIN" --admin-password "$PG_TMP" --public-access None \
-      --high-availability Disabled --backup-retention 7 --tags "${TAGS[@]}" --yes -o none \
-    && az postgres flexible-server db create -g "$RG" -s "$PG" -d pedidos -o none \
-    && echo "PG-OK" ) > "$PG_LOG" 2>&1 &
-  PG_PID=$!
-fi
-
 paso "VM $VM con Docker (tamaños a probar: $VM_SIZES)"
 CLOUD_INIT="$(mktemp)"
 cat > "$CLOUD_INIT" <<'EOF'
@@ -82,14 +68,18 @@ az vm open-port -g "$RG" -n "$VM" --port 80,8090,15672,15673 --priority 900 -o n
 VM_IP="$(ip_vm)"
 echo "IP pública de la VM: $VM_IP"
 
-if [[ -n "${PG_PID:-}" ]]; then
-  paso "Esperando PostgreSQL"
-  wait "$PG_PID" || true
-  cat "$PG_LOG"
+VM_LOC="$(az vm show -g "$RG" -n "$VM" --query location -o tsv)"
+
+paso "PostgreSQL $PG (B1ms) en la región de la VM ($VM_LOC): ~5-10 min"
+if ! existe az postgres flexible-server show -g "$RG" -n "$PG"; then
+  # Clave temporal: el paso 2 la reemplaza por una nueva y la guarda en el .env de la VM.
+  PG_TMP="Tmp$(openssl rand -hex 12)Aa1"
+  az postgres flexible-server create -g "$RG" -n "$PG" -l "$VM_LOC"     --tier Burstable --sku-name Standard_B1ms --storage-size 32 --version 16     --admin-user "$PG_ADMIN" --admin-password "$PG_TMP" --public-access None     --backup-retention 7 --tags "${TAGS[@]}" --yes -o none
 fi
+existe az postgres flexible-server db show -g "$RG" -s "$PG" -d pedidos   || az postgres flexible-server db create -g "$RG" -s "$PG" -d pedidos -o none
+
 paso "Firewall de PostgreSQL: solo la IP de la VM"
-az postgres flexible-server firewall-rule create -g "$RG" -n "$PG" --rule-name vm-pedidos360 \
-  --start-ip-address "$VM_IP" --end-ip-address "$VM_IP" -o none
+az postgres flexible-server firewall-rule create -g "$RG" -s "$PG" -n vm-pedidos360   --start-ip-address "$VM_IP" --end-ip-address "$VM_IP" -o none
 
 paso "Resumen"
 az resource list -g "$RG" --query "[].{nombre:name, tipo:type}" -o table
